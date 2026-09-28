@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from random import randrange
+from fastapi import HTTPException
 
 
 app=FastAPI()
@@ -31,7 +32,7 @@ def get_post_by_id(post_id:int):
     for post in posts_DB:
         if post["id"]==post_id:
             return post
-    return {"Message":"Post not found"}
+    raise HTTPException(status_code=404,detail="post not found")
 
 
 
@@ -61,8 +62,7 @@ def patch_update(post_id:int,updated_post:create_post):
                 post['title']=updated_post.title
                 post['content']=updated_post.content
                 return post
-            posts_DB.append(post)
-    return {"Message":"Specific field is been updated"}
+    raise HTTPException(status_code=404,detail="post not found")
     
 
 @app.delete("/posts")
@@ -75,4 +75,5 @@ def postdelets(post_id:int,delete_post=create_post):
     for post in posts_DB:
         if post["id"]==post_id:
             posts_DB.remove(post)
-    return {"Message":"post is been deleted successfully"}
+            return {"message": "Post deleted successfully"}
+    raise HTTPException(status_code=404,detail="post not found")
