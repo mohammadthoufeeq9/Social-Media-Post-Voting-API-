@@ -1,143 +1,46 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from random import randrange
-from fastapi import HTTPException,Header,Cookie,Form,File,UploadFile
-
+from fast_app.router import posts
 
 app=FastAPI()
-posts_DB=[
-    {
-        "title": "first_api_post",
-        "content": "api",
-        "id": 4604
-    },{
-            "title": "Mohammad Thoufeeq",
-            "content": "api",
-            "id": 4655
-        },{
-                "title": "sakamoto days",
-                "content": "api",
-                "id": 4404
-            },{
-                    "title": "Onepiece",
-                    "content": "api",
-                    "id": 2604
-                },{
-                        "title": "Fury_Toxic",
-                        "content": "api",
-                        "id": 4564
-                    },{
-                            "title": "Tony",
-                            "content": "api",
-                            "id": 2204
-                        },{
-                            "title": "Bleach",
-                            "content": "api",
-                            "id": 3304
-                        }
-]
+app.include_router(posts.router)
+# class create_post(BaseModel):
+#     title:str
+#     content:str
 
 
-class create_post(BaseModel):
-    title:str
-    content:str
+# @app.get("/user_name")
+# def get_user():
+#     return 'Thoufeeq'
+
+# @app.get("/dep-test")
+# def get_dep(user=Depends(get_user)):
+#     return {
+#         'user': user
+#     }
 
 
+# @app.get("/header-test")
+# def header_test(api_key: str | None = Header(default=None)):
+#     return {
+#         "api_key": api_key
+#     }
 
-@app.get("/posts")
-def home(limit:int =5,title :str |None=None,notify:bool=False):
-    if title:
-        filtered_title=[]
-        for post in posts_DB:
-            if post['title']==title:
-                filtered_title.append(post)
-        return filtered_title[:limit]
-    return {
-        "Message":"All posts are here ****",
-        "notify":notify,
-        "posts":posts_DB[:limit]}
+# @app.get("/cook")
+# def cook_test(session_id:str|None = Cookie(default=None)):
+#     return{
+#         "sessionid":session_id
+#     }
 
-@app.get("/header-test")
-def header_test(api_key: str | None = Header(default=None)):
-    return {
-        "api_key": api_key
-    }
+# @app.post("/form")
+# def form(user_name:str=Form(),password:str=Form()):
+#     return{
+#         "username":user_name,
+#         "password":password
+#     }
 
-@app.get("/cook")
-def cook_test(session_id:str|None = Cookie(default=None)):
-    return{
-        "sessionid":session_id
-    }
-
-@app.post("/form")
-def form(user_name:str=Form(),password:str=Form()):
-    return{
-        "username":user_name,
-        "password":password
-    }
-
-@app.post("/upload")
-def upload(file_up:UploadFile=File()):
-    return{
-        "filename":file_up.filename,
-        "content_type":file_up.content_type
-    }
-
-@app.get("/post/{post_id}")
-def get_post_by_id(post_id:int,detail:bool=False):
-
-    for post in posts_DB:
-        if post["id"]==post_id:
-            if detail:
-                return{
-                    "Message":f"This is the complete information of {post['id']}-post ",
-                    "id":post["id"],
-                    "title":post["title"],
-                    "content":post["content"]
-                }
-            return post
-    raise HTTPException(status_code=404,detail="post not found")
-
-
-
-@app.post("/posts")
-def createPost(post:create_post):
-    new_post={
-        "title":post.title,
-        "content":post.content,
-        "id":randrange(2,10000)
-    }
-    posts_DB.append(new_post)
-    return {"message":"post created"}
-
-
-
-@app.put("/posts")
-def put_update():
-    return {"Message":"Entire post is been updated"}
-
-
-
-@app.patch("/posts/{post_id}")
-def patch_update(post_id:int,updated_post:create_post):
-
-    for post in posts_DB:
-            if post["id"]==post_id:
-                post['title']=updated_post.title
-                post['content']=updated_post.content
-                return post
-    raise HTTPException(status_code=404,detail="post not found")
-    
-
-@app.delete("/posts")
-def post_delete():
-    return {"Message":"post is been deleted successfully"}
-
-
-@app.delete("/post/{post_id}")
-def postdelets(post_id:int,delete_post=create_post):
-    for post in posts_DB:
-        if post["id"]==post_id:
-            posts_DB.remove(post)
-            return {"message": "Post deleted successfully"}
-    raise HTTPException(status_code=404,detail="post not found")
+# @app.post("/upload")
+# def upload(file_up:UploadFile=File()):
+#     return{
+#         "filename":file_up.filename,
+#         "content_type":file_up.content_type
+#     }
