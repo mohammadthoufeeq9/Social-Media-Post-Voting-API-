@@ -1,0 +1,14 @@
+from sqlalchemy import Boolean,Integer,Text,DateTime
+from sqlalchemy.orm import DeclarativeBase,Mapped,mapped_column
+from datetime import datetime
+
+class Base(DeclarativeBase):
+    pass
+
+class Post(Base):
+    __tablename__="posts"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    title:Mapped[str]=mapped_column(Text)
+    content:Mapped[str]=mapped_column(Text)
+    published:Mapped[bool]=mapped_column(Boolean,default=True)
+    created_at:Mapped[datetime]

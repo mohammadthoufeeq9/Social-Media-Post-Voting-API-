@@ -4,39 +4,13 @@ from random import randrange
 from fastapi import HTTPException,Header,Cookie,Form,File,UploadFile,Depends
 from fastapi import APIRouter
 
-router = APIRouter()
-posts_DB=[
-    {
-        "title": "first_api_post",
-        "content": "api",
-        "id": 4604
-    },{
-            "title": "Mohammad Thoufeeq",
-            "content": "api",
-            "id": 4655
-        },{
-                "title": "sakamoto days",
-                "content": "api",
-                "id": 4404
-            },{
-                    "title": "Onepiece",
-                    "content": "api",
-                    "id": 2604
-                },{
-                        "title": "Fury_Toxic",
-                        "content": "api",
-                        "id": 4564
-                    },{
-                            "title": "Tony",
-                            "content": "api",
-                            "id": 2204
-                        },{
-                            "title": "Bleach",
-                            "content": "api",
-                            "id": 3304
-                        }
-]
+from sqlalchemy.orm import Session
+from fastapi import Depends
 
+from fast_app.database.database import get_db
+from fast_app.models.post import Post
+
+router = APIRouter()
 
 class create_post(BaseModel):
     title:str
@@ -46,18 +20,25 @@ class create_post(BaseModel):
 def common_limit(limit:int=5):
     return limit
 
+
+
+@router.get("/pst")
+def get_post(db:Session = Depends(get_db)):
+    p=db.query(Post).all()
+    return p
+
 @router.get("/posts")
-def home(limit=Depends(common_limit),title :str |None=None,notify:bool=False):
+def home(post_here:Session=Depends(get_db),limit=Depends(common_limit),title :str |None=None,notify:bool=False):
     if title:
         filtered_title=[]
-        for post in posts_DB:
-            if post['title']==title:
+        for post in post_here:
+            if post('title')==title:
                 filtered_title.append(post)
         return filtered_title[:limit]
     return {
         "Message":"All posts are here",
         "notify":notify,
-        "posts":posts_DB[:limit]}
+        "posts":post_here[:limit]}
 
 
 
