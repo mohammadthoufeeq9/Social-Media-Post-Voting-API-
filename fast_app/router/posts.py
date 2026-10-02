@@ -12,6 +12,10 @@ from fast_app.models.post import Post
 
 router = APIRouter()
 
+class update_post(BaseModel):#patch needs to omite few things so we create another schema with a none
+     title:str | None=None
+     content:str|None=None
+
 class create_post(BaseModel):
     title:str
     content:str
@@ -20,82 +24,84 @@ class create_post(BaseModel):
 def common_limit(limit:int=5):
     return limit
 
+#function to get all posts
+def get_posts(db:Session=Depends(get_db)):
+    return db.query(Post).all()
 
+#fun to get one post
+def get_a_post(db:Session,post_id:int):
+    return db.query(Post).filter(Post.id==post_id).first()
 
-@router.get("/pst")
-def get_post(db:Session = Depends(get_db)):
-    p=db.query(Post).all()
-    return p
 
 @router.get("/posts")
-def home(post_here:Session=Depends(get_db),limit=Depends(common_limit),title :str |None=None,notify:bool=False):
-    if title:
-        filtered_title=[]
-        for post in post_here:
-            if post('title')==title:
-                filtered_title.append(post)
-        return filtered_title[:limit]
-    return {
-        "Message":"All posts are here",
-        "notify":notify,
-        "posts":post_here[:limit]}
+def home(db=Depends(get_posts),limit=Depends(common_limit),notify:bool=False):
+    return{
+        'Message':'Here are all the posts',
+        'notify':notify,
+        'Posts':db[:limit]
+    }
 
 
 
 @router.get("/post/{post_id}")
-def get_post_by_id(post_id:int,detail:bool=False):
-
-    for post in posts_DB:
-        if post["id"]==post_id:
-            if detail:
-                return{
-                    "Message":f"This is the complete information of {post['id']}-post ",
-                    "id":post["id"],
-                    "title":post["title"],
-                    "content":post["content"]
-                }
+def get_post_by_id(post_id:int,db:Session=Depends(get_db),detail:bool=False):
+            post=get_a_post(db,post_id)
+            if post is None:
+                raise HTTPException(status_code=404,detail="post not found")
             return post
-    raise HTTPException(status_code=404,detail="post not found")
 
 
-@router.post("/posts")
-def createPost(post:create_post):
-    new_post={
-        "title":post.title,
-        "content":post.content,
-        "id":randrange(2,10000)
-    }
-    posts_DB.append(new_post)
-    return {"message":"post created"}
+@router.post("/post")
+def createPost(post_cre:create_post,db:Session=Depends(get_db)):
+     new_post=Post(
+          title=post_cre.title,
+          content=post_cre.content
+     )
+     db.add(new_post)
+     db.commit()#save it
+     db.refresh(new_post) # retrieve generated values--this will refrest to create default values if not present it will give only title and content
 
-
-
-@router.put("/posts")
-def put_update():
-    return {"Message":"Entire post is been updated"}
+     return new_post
 
 
 
-@router.patch("/posts/{post_id}")
-def patch_update(post_id:int,updated_post:create_post):
+@router.put("/post/{post_id}")
+def post_put(post_id:int,post_put:create_post,db:Session=Depends(get_db)):
+    post=get_a_post(db,post_id)
+    if post is None:
+        raise HTTPException(status_code=404,detail="Post not found-have a break")
+    post.title = post_put.title
+    post.content = post_put.content
 
-    for post in posts_DB:
-            if post["id"]==post_id:
-                post['title']=updated_post.title
-                post['content']=updated_post.content
-                return post
-    raise HTTPException(status_code=404,detail="post not found")
-    
+    db.commit()
+    db.refresh(post)
 
-@router.delete("/posts")
-def post_delete():
-    return {"Message":"post is been deleted successfully"}
+    return post     
+             
 
+
+
+@router.patch("/post/{post_id}")
+def patch_update(post_id:int,post_data:update_post,db:Session=Depends(get_db)):
+    post=get_a_post(db,post_id)
+    if post is None:
+        raise HTTPException(status_code=404,detail="post not found")
+    if post_data.title is not None:
+         post.title = post_data.title
+    if post_data is not None:
+         post.content = post_data.content
+
+    db.commit()
+    db.refresh(post)
+    return post
 
 @router.delete("/post/{post_id}")
-def postdelets(post_id:int,delete_post=create_post):
-    for post in posts_DB:
-        if post["id"]==post_id:
-            posts_DB.remove(post)
-            return {"message": "Post deleted successfully"}
-    raise HTTPException(status_code=404,detail="post not found")
+def post_delete(post_id:int,db:Session=Depends(get_db)):
+    post=get_a_post(db,post_id)
+    if post is None:
+         raise HTTPException(status_code=404,detail="Oh shit!!! Try providing a valid post_id....")
+    if post is not None:
+        db.delete(post)
+        db.commit()
+        return {"Message":"post is been deleted successfully"}
+
