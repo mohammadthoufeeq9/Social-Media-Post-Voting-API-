@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean,Integer,Text, func
 from sqlalchemy.orm import DeclarativeBase,Mapped,mapped_column
 from datetime import datetime
+# from pydantic import BaseModel,ConfigDict
 
 class Base(DeclarativeBase):
     pass
