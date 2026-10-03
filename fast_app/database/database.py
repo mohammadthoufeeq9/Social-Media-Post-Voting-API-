@@ -15,7 +15,7 @@
 
 from sqlalchemy import engine,text,create_engine
 from sqlalchemy.orm import sessionmaker
-
+from fast_app.models.post import Base
 DATABASE_URL="postgresql+psycopg://postgres:Thoufeeq1291@localhost:5432/fastapi"
 engine = create_engine(DATABASE_URL)
 # with engine.connect() as conn:
@@ -36,3 +36,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
+Base.metadata.create_all(bind=engine)

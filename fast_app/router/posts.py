@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from fast_app.database.database import get_db
-from fast_app.models.post import Post
+from fast_app.models.post import Post,User
 
-from schemas.post import(
-     create_post,update_post,PostResponse,PostsResponse
+from fast_app.schemas.post import(
+     create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse
 )
+from fast_app.utils.password import verify_hash,hash_password
+
 
 router = APIRouter()
 
@@ -52,6 +54,21 @@ def get_posts(
 #fun to get one post
 def get_a_post(db:Session,post_id:int):
     return db.query(Post).filter(Post.id==post_id).first()
+
+
+#router for user Registration
+@router.post("/register",response_model=UserResponse,status_code=201)
+def reg(user_data:UserCreate,db:Session=Depends(get_db)):
+     new_user=User(
+          username=user_data.username,
+          email=user_data.email,
+          password=hash_password(user_data.password)
+     )
+     db.add(new_user)
+     db.commit()
+     db.refresh(new_user)
+
+     return new_user
 
 
 @router.get("/posts",response_model=PostsResponse)

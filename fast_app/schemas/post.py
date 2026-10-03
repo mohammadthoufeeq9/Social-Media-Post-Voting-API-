@@ -1,4 +1,4 @@
-from pydantic import BaseModel,ConfigDict
+from pydantic import BaseModel,ConfigDict,EmailStr
 from datetime import datetime
 
 
@@ -22,3 +22,13 @@ class PostsResponse(BaseModel):#_list_post
     Message:str
     notify:bool
     Posts:list[PostResponse]
+
+class UserCreate(BaseModel):
+    username:str
+    email:EmailStr
+    password:str
+
+class UserResponse(BaseModel):
+    id:int
+    username:str
+    email:str

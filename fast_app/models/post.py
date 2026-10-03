@@ -13,3 +13,10 @@ class Post(Base):
     content:Mapped[str]=mapped_column(Text)
     published:Mapped[bool]=mapped_column(Boolean,default=True)
     created_at:Mapped[datetime]=mapped_column(server_default=func.now())
+
+class User(Base):
+    __tablename__="Users"
+    id:Mapped[int]=mapped_column(primary_key=True)
+    username:Mapped[str]=mapped_column(Text,unique=True)
+    email:Mapped[str]=mapped_column(Text,unique=True)
+    password:Mapped[str]=mapped_column(Text)
