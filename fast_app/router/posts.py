@@ -9,9 +9,11 @@ from fast_app.database.database import get_db
 from fast_app.models.post import Post,User
 
 from fast_app.schemas.post import(
-     create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse
+     create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse,UserLogin
 )
 from fast_app.utils.password import verify_hash,hash_password
+from fast_app.utils.auth import create_access_token,get_current_user
+from fastapi.security import OAuth2PasswordRequestForm
 
 
 router = APIRouter()
@@ -39,7 +41,6 @@ def get_posts(
     # query = query.filter(
     #     and_(
     #         Post.published == True,
-    #         Post.title.ilike("%naruto%")
     #     )
     # )
 
@@ -48,6 +49,11 @@ def get_posts(
     query=query.order_by(Post.created_at.desc())
 
     return query.offset(offset).limit(limit).all()
+
+
+@router.get("/me")
+def get_me(current_user=Depends(get_current_user)):
+     return current_user
 
 
 
@@ -70,13 +76,35 @@ def reg(user_data:UserCreate,db:Session=Depends(get_db)):
 
      return new_user
 
+#router for login
+@router.post("/login")
+def login(user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
+     print("USERNAME:", user_detail.username)
+     print("PASSWORD RECEIVED:", bool(user_detail.password))
+     user=db.query(User).filter(User.email == user_detail.username).first()
+
+     print("USER FOUND:", user is not None)
+
+     if user is not None:
+          if verify_hash(user_detail.password,user.password):
+               token=create_access_token({
+                    "user_id":user.id
+               })
+               return {
+                    "Message":"Login Successfull",
+                    "access_token":token,
+                    "Token_type":"bearer"
+               }
+          raise HTTPException(status_code=401,detail="Invalid email or password")
+     raise HTTPException(status_code=401,detail="Invalid email or password")
+
 
 @router.get("/posts",response_model=PostsResponse)
-def home(db=Depends(get_posts),notify:bool=False):
+def home(current_user=Depends(get_current_user),posts=Depends(get_posts),notify:bool=False):
     return{
         'Message':'Here are all the posts',
         'notify':notify,
-        'Posts':db
+        'Posts':posts
     }
 
 
