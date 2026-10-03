@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean,Integer,Text, func
+from sqlalchemy import Boolean,Integer,Text, func,ForeignKey
 from sqlalchemy.orm import DeclarativeBase,Mapped,mapped_column
 from datetime import datetime
 # from pydantic import BaseModel,ConfigDict
@@ -13,6 +13,7 @@ class Post(Base):
     content:Mapped[str]=mapped_column(Text)
     published:Mapped[bool]=mapped_column(Boolean,default=True)
     created_at:Mapped[datetime]=mapped_column(server_default=func.now())
+    author_id:Mapped[int]=mapped_column(Integer,ForeignKey("User.id"))
 
 class User(Base):
     __tablename__="Users"

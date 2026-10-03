@@ -50,13 +50,6 @@ def get_posts(
 
     return query.offset(offset).limit(limit).all()
 
-
-@router.get("/me")
-def get_me(current_user=Depends(get_current_user)):
-     return current_user
-
-
-
 #fun to get one post
 def get_a_post(db:Session,post_id:int):
     return db.query(Post).filter(Post.id==post_id).first()
@@ -107,6 +100,15 @@ def home(current_user=Depends(get_current_user),posts=Depends(get_posts),notify:
         'Posts':posts
     }
 
+@router.get("/my-posts",response_model=PostsResponse)
+def get_my_posts(current_user=Depends(get_current_user),db:Session=Depends(get_db),notify:bool=False):
+     posts=db.query(Post).filter(Post.author_id == current_user.id).all()
+     return {
+        'Message':'Here are all the posts',
+        'notify':notify,
+        'Posts':posts
+    }
+
 
 @router.get("/post/{post_id}",response_model=PostResponse)
 def get_post_by_id(post_id:int,db:Session=Depends(get_db),detail:bool=False):
@@ -117,11 +119,10 @@ def get_post_by_id(post_id:int,db:Session=Depends(get_db),detail:bool=False):
 
 
 @router.post("/post",response_model=PostResponse,status_code=201)
-def createPost(post_cre:create_post,db:Session=Depends(get_db)):
-     new_post=Post(
-          title=post_cre.title,
-          content=post_cre.content
-     )
+def createPost(post_cre:create_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+     
+     new_post=Post(title=post_cre.title,content=post_cre.content,author_id=current_user.id)
+        
      db.add(new_post)
      db.commit()#save it
      db.refresh(new_post) # retrieve generated values--this will refrest to create default values if not present it will give only title and content
@@ -131,10 +132,12 @@ def createPost(post_cre:create_post,db:Session=Depends(get_db)):
 
 
 @router.put("/post/{post_id}",response_model=PostResponse,status_code=200)
-def post_put(post_id:int,post_put:create_post,db:Session=Depends(get_db)):
+def post_put(post_id:int,post_put:create_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     post=get_a_post(db,post_id)
     if post is None:
         raise HTTPException(status_code=404,detail="Post not found-have a break")
+    if post.author_id != current_user.id:
+         raise HTTPException(status_code=403,detail="You are not allowed to update this post")
     post.title = post_put.title
     post.content = post_put.content
 
@@ -147,8 +150,10 @@ def post_put(post_id:int,post_put:create_post,db:Session=Depends(get_db)):
 
 
 @router.patch("/post/{post_id}",response_model=PostResponse,status_code=200)
-def patch_update(post_id:int,post_data:update_post,db:Session=Depends(get_db)):
+def patch_update(post_id:int,post_data:update_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     post=get_a_post(db,post_id)
+    if Post.author_id != current_user:
+         raise HTTPException(status_code=403,detail="You are not allowed to update this post")
     if post is None:
         raise HTTPException(status_code=404,detail="post not found")
     if post_data.title is not None:
@@ -161,8 +166,10 @@ def patch_update(post_id:int,post_data:update_post,db:Session=Depends(get_db)):
     return post
 
 @router.delete("/post/{post_id}",status_code=204)
-def post_delete(post_id:int,db:Session=Depends(get_db)):
+def post_delete(post_id:int,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     post=get_a_post(db,post_id)
+    if Post.author_id != current_user:
+         raise HTTPException(status_code=403,detail="You are not allowed to delete this post")
     if post is None:
          raise HTTPException(status_code=404,detail="Oh shit!!! Try providing a valid post_id....")
     if post is not None:
