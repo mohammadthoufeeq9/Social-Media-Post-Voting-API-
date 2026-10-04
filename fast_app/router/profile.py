@@ -12,12 +12,14 @@ from fast_app.schemas.post import(
      UserResponse,PasswordChange,ProfileUpdate,
 )
 from fast_app.utils.password import verify_hash,hash_password
-from fast_app.utils.auth import create_access_token,get_current_user
+from fast_app.utils.auth import create_access_token,get_current_user,test_user
 from fastapi.security import OAuth2PasswordRequestForm
+
 
 router = APIRouter()
 
-@router.get("/my-profile",response_model=UserResponse)
+
+@router.get("/my-profile",response_model= UserResponse)
 def get_profile(db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     return current_user
 
@@ -33,6 +35,7 @@ def profile_update_of_user(profile_data:ProfileUpdate,current_user=Depends(get_c
     data.refresh(current_user)
 
     return current_user
+
 
 @router.put("/chnage-password")
 def change_password(pass_change:PasswordChange,current_user=Depends(get_current_user),db:Session=Depends(get_db)):

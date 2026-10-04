@@ -44,3 +44,6 @@ class ProfileUpdate(BaseModel):
 class PasswordChange(BaseModel):
     current_password:str
     New_password:str
+
+class UserNotFoundException(Exception):
+    pass

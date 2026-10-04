@@ -25,6 +25,7 @@ def get_current_user(token:str=Depends(oauth_scheme),db=Depends(get_db)):
     try:
         play_load=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
         user_id=play_load.get("user_id")
+        
         if user_id is None:
             raise HTTPException(status_code=401 ,detail="User not found")
     except JWTError:
@@ -37,5 +38,10 @@ def get_current_user(token:str=Depends(oauth_scheme),db=Depends(get_db)):
         raise HTTPException(status_code=401,detail="user not found")
     return user
 
+def test_user():
+    return{
+        "username":"Thoufeeq",
+        "id":5
+    }
         
     

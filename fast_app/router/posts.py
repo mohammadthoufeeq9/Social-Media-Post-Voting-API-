@@ -12,7 +12,7 @@ from fast_app.schemas.post import(
      create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse,UserLogin
 )
 from fast_app.utils.password import verify_hash,hash_password
-from fast_app.utils.auth import create_access_token,get_current_user
+from fast_app.utils.auth import create_access_token,get_current_user,test_user
 from fastapi.security import OAuth2PasswordRequestForm
 
 
@@ -54,6 +54,18 @@ def get_posts(
 def get_a_post(db:Session,post_id:int):
     return db.query(Post).filter(Post.id==post_id).first()
 
+#get admin by current user
+def get_current_user_admin(current_user=Depends(get_current_user)):
+     if not current_user.is_admin:
+          raise HTTPException(status_code=403,detail="Admin access required")
+     return current_user
+
+@router.get("/admin")
+def get_admin(current_user=Depends(get_current_user_admin)):
+     return {
+          "Message":"Welcome admin",
+          "User":current_user.username
+     }
 
 #router for user Registration
 @router.post("/register",response_model=UserResponse,status_code=201)

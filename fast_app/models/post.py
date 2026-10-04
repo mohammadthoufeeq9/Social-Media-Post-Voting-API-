@@ -21,3 +21,4 @@ class User(Base):
     username:Mapped[str]=mapped_column(Text,unique=True)
     email:Mapped[str]=mapped_column(Text,unique=True)
     password:Mapped[str]=mapped_column(Text)
+    is_admin:Mapped[bool]=mapped_column(default=False)
