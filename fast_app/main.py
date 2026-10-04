@@ -1,8 +1,9 @@
 from fastapi import FastAPI
-from fast_app.router import posts
+from fast_app.router import posts,profile
 
 app=FastAPI()
 app.include_router(posts.router)
+app.include_router(profile.router)
 # class create_post(BaseModel):
 #     title:str
 #     content:str

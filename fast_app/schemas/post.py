@@ -36,3 +36,11 @@ class UserResponse(BaseModel):
 class UserLogin(BaseModel):
     email:EmailStr
     password:str
+
+class ProfileUpdate(BaseModel):
+    username:str|None=None
+    email:EmailStr|None=None
+
+class PasswordChange(BaseModel):
+    current_password:str
+    New_password:str

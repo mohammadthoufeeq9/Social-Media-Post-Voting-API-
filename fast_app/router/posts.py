@@ -100,6 +100,8 @@ def home(current_user=Depends(get_current_user),posts=Depends(get_posts),notify:
         'Posts':posts
     }
 
+
+
 @router.get("/my-posts",response_model=PostsResponse)
 def get_my_posts(current_user=Depends(get_current_user),db:Session=Depends(get_db),notify:bool=False):
      posts=db.query(Post).filter(Post.author_id == current_user.id).all()
