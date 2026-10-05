@@ -14,7 +14,7 @@ from fast_app.schemas.post import(
 from fast_app.utils.password import verify_hash,hash_password
 from fast_app.utils.auth import create_access_token,get_current_user,test_user
 from fastapi.security import OAuth2PasswordRequestForm
-
+from fastapi import BackgroundTasks
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ def get_posts(
     title: str | None = None,
     search:str|None=None,
     published:bool|None=None,
-    offset:int=0,
+    page:int=0,
     db: Session = Depends(get_db)
 ):
     query = db.query(Post)
@@ -38,15 +38,11 @@ def get_posts(
              Post.content.ilike(f"%{search}%")
          ))
 
-    # query = query.filter(
-    #     and_(
-    #         Post.published == True,
-    #     )
-    # )
+    if published==True:
+          query= query.filter(Post.published == published)
+          query=query.order_by(Post.created_at.desc())
 
-    if published is not None:
-        query= query.filter(Post.published == published)
-    query=query.order_by(Post.created_at.desc())
+    offset=(page -1)*limit
 
     return query.offset(offset).limit(limit).all()
 
@@ -66,6 +62,7 @@ def get_admin(current_user=Depends(get_current_user_admin)):
           "Message":"Welcome admin",
           "User":current_user.username
      }
+
 
 #router for user Registration
 @router.post("/register",response_model=UserResponse,status_code=201)

@@ -8,7 +8,7 @@ from fast_app.database.database import get_db
 from fast_app.models.post import User
 from fastapi import Depends,HTTPException
 
-load_dotenv("D:\\FASTAPI\\api_app\\fast_app\\.env")
+load_dotenv("D:\\FASTAPI\\api_app\\.env")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"

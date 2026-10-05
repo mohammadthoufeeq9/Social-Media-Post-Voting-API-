@@ -16,7 +16,11 @@
 from sqlalchemy import engine,text,create_engine
 from sqlalchemy.orm import sessionmaker
 from fast_app.models.post import Base
-DATABASE_URL="postgresql+psycopg://postgres:Thoufeeq1291@localhost:5432/fastapi"
+import os
+from dotenv import load_dotenv
+load_dotenv("D:\\FASTAPI\\api_app\\.env")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 # with engine.connect() as conn:
 #     result=conn.execute(text("SELECT 1"))        to check connection

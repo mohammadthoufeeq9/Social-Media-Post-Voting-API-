@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fast_app.router import posts,profile
+from fast_app.router import posts,profile,noconcern
 from fast_app.utils.auth import get_current_user
 import time
 from fastapi import Request
@@ -10,6 +10,7 @@ from fast_app.schemas.post import UserNotFoundException
 app=FastAPI()
 app.include_router(posts.router)
 app.include_router(profile.router)
+app.include_router(noconcern.router)
 # app.dependency_overrides[get_current_user]=test_user
 
 

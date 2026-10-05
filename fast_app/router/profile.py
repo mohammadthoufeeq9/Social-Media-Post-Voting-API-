@@ -24,12 +24,14 @@ def get_profile(db:Session=Depends(get_db),current_user=Depends(get_current_user
     return current_user
 
 
-@router.post("/update-profile",response_model=UserResponse)
+@router.patch("/update-profile",response_model=UserResponse)
 def profile_update_of_user(profile_data:ProfileUpdate,current_user=Depends(get_current_user),data:Session=Depends(get_db)):
     if profile_data.username is not None:
         current_user.username = profile_data.username
     if profile_data.email is not None:
         current_user.email = profile_data.email
+    if profile_data.Bio is not None:
+        current_user.Bio = profile_data.Bio
 
     data.commit()
     data.refresh(current_user)

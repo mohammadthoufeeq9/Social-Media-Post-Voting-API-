@@ -13,7 +13,7 @@ class Post(Base):
     content:Mapped[str]=mapped_column(Text)
     published:Mapped[bool]=mapped_column(Boolean,default=True)
     created_at:Mapped[datetime]=mapped_column(server_default=func.now())
-    author_id:Mapped[int]=mapped_column(Integer,ForeignKey("User.id"))
+    author_id:Mapped[int]=mapped_column(Integer,ForeignKey("Users.id"))
 
 class User(Base):
     __tablename__="Users"
@@ -22,3 +22,4 @@ class User(Base):
     email:Mapped[str]=mapped_column(Text,unique=True)
     password:Mapped[str]=mapped_column(Text)
     is_admin:Mapped[bool]=mapped_column(default=False)
+    Bio:Mapped[str]=mapped_column(Text,nullable=True)
