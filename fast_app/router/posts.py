@@ -6,15 +6,16 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from fast_app.database.database import get_db
-from fast_app.models.post import Post,User
+from fast_app.models.post import Post,User,RevokedToken
 
 from fast_app.schemas.post import(
-     create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse,UserLogin
+     create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse,UserLogin,RefreshToken
 )
 from fast_app.utils.password import verify_hash,hash_password
-from fast_app.utils.auth import create_access_token,get_current_user,test_user
+from fast_app.utils.auth import create_access_token,get_current_user,create_refresh_token,SECRET_KEY,ALGORITHM
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import BackgroundTasks
+from jose import jwt,JWTError
 
 router = APIRouter()
 
@@ -78,23 +79,64 @@ def reg(user_data:UserCreate,db:Session=Depends(get_db)):
 
      return new_user
 
+#router to get a refersh token
+@router.post("/refresh")
+def refresh_token(data:RefreshToken,db:Session=Depends(get_db)):
+     try:
+          playload= jwt.decode(data.refresh_token,SECRET_KEY,algorithms=[ALGORITHM])
+          if playload.get("type") != "refresh":
+               raise HTTPException(status_code=401,detail="Invalid refresh token")
+          jti=playload.get("jti")
+          revoked=db.query(RevokedToken).filter(RevokedToken.jti==jti).first()
+          if revoked is not None:
+               raise HTTPException(status_code=401, detail="Refresh token has been revoked")
+          user_id = playload.get('user_id')
+          if user_id is None:
+               raise HTTPException(status_code=401,detail="Invalid refresh_token")
+          new_access_token=create_access_token({"user_id":user_id,"type":"access"})
+          return {
+               "access_token":new_access_token,
+               "token_type":"bearer"
+          }
+     except JWTError:
+          raise HTTPException(status_code=401,detail="Invalid token or token expired")
+
+@router.post("/logout")
+def logout(data:RefreshToken,db:Session=Depends(get_db)):
+     try:
+          playload=jwt.decode(data.refresh_token,SECRET_KEY,algorithms=ALGORITHM)
+          if playload.get("type") != "refresh":
+               raise HTTPException(status_code=401,detail="Invalid refresh token")
+          jti=playload.get('jti')
+          if jti is None:
+               raise HTTPException(status_code=401,detail="Invalid refresh token")
+          revoked = db.query(RevokedToken).filter(RevokedToken.jti== jti).first()
+          if revoked is None:
+            db.add(RevokedToken(jti=jti))
+            db.commit()
+
+          return {"message": "Logout successful"}
+     except JWTError:
+          raise HTTPException(status_code=401,detail="Invalid or expired token")
+
+     
 #router for login
 @router.post("/login")
 def login(user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
      print("USERNAME:", user_detail.username)
      print("PASSWORD RECEIVED:", bool(user_detail.password))
-     user=db.query(User).filter(User.email == user_detail.username).first()
+     user=db.query(User).filter(User.username == user_detail.username).first()
 
      print("USER FOUND:", user is not None)
 
      if user is not None:
           if verify_hash(user_detail.password,user.password):
-               token=create_access_token({
-                    "user_id":user.id
-               })
+               access_token = create_access_token({"user_id": user.id,"type": "access"})
+               refresh_token = create_refresh_token({"user_id": user.id,"type": "refresh"})
                return {
                     "Message":"Login Successfull",
-                    "access_token":token,
+                    "access_token":access_token,
+                    "refresh_token":refresh_token,
                     "Token_type":"bearer"
                }
           raise HTTPException(status_code=401,detail="Invalid email or password")

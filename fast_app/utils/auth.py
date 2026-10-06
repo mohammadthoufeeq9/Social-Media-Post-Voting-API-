@@ -4,9 +4,10 @@ from datetime import datetime,timezone,timedelta
 import os
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
-from fast_app.database.database import get_db
+from fast_app.database.database import get_auth_db
 from fast_app.models.post import User
 from fastapi import Depends,HTTPException
+from uuid import uuid4
 
 load_dotenv("D:\\FASTAPI\\api_app\\.env")
 
@@ -17,11 +18,17 @@ def create_access_token(data: dict):
     to_encode=data.copy()
     expire=datetime.now(timezone.utc)+timedelta(minutes=30)
     to_encode.update({"exp":expire})
-    return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token(data:dict):
+    to_encode=data.copy()
+    expire=datetime.now(timezone.utc)+timedelta(days=7)
+    to_encode.update({"exp":expire,"type":"refresh","jti":str(uuid4())})
+    return jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
 
 oauth_scheme=OAuth2PasswordBearer(tokenUrl='/login')
 
-def get_current_user(token:str=Depends(oauth_scheme),db=Depends(get_db)):
+def get_current_user(token:str=Depends(oauth_scheme),db=Depends(get_auth_db)):
     try:
         play_load=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
         user_id=play_load.get("user_id")

@@ -50,3 +50,6 @@ class PasswordChange(BaseModel):
 
 class UserNotFoundException(Exception):
     pass
+
+class RefreshToken(BaseModel):
+    refresh_token:str

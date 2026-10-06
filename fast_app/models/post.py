@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean,Integer,Text, func,ForeignKey
+from sqlalchemy import Boolean,Integer,Text, func,ForeignKey,String
 from sqlalchemy.orm import DeclarativeBase,Mapped,mapped_column
 from datetime import datetime
 # from pydantic import BaseModel,ConfigDict
@@ -23,3 +23,10 @@ class User(Base):
     password:Mapped[str]=mapped_column(Text)
     is_admin:Mapped[bool]=mapped_column(default=False)
     Bio:Mapped[str]=mapped_column(Text,nullable=True)
+
+
+class RevokedToken(Base):
+    __tablename__ = "revoked_tokens"
+
+    jti: Mapped[str] = mapped_column(String(255), primary_key=True)
+    revoked_at: Mapped[datetime] = mapped_column(server_default=func.now())

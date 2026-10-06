@@ -5,6 +5,11 @@ from typing import List
 from fastapi import HTTPException
 import os
 from fastapi import Header
+from fast_app.models.post import Post
+from fast_app.utils.auth import get_current_user
+from sqlalchemy.orm import Session
+from fast_app.database.database import get_db
+from fastapi import Depends
 
 # BackGroundTask...........
 router=APIRouter()
@@ -66,5 +71,26 @@ def set_cookie(response:Response):
 def get_pg(Username:str|None=Cookie(default=None)):
     return{
         "username":Username,
-        "posts":"take a look username got from cookies"
+        "posts":"take a look username got from cookies",
+
     }
+
+@router.post("/transaction")
+#Here we dont need to add db.commit or db.rollback just db.add_all([post1,post2])
+def trans(db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+    with db.begin():
+        Post1=Post(
+            title="20's life ",
+            content="This is stage of life where you will figureout what to do and what not......",
+            author_id=current_user.id
+        )
+        Post2=Post(
+            title="5-places you must be quite",
+            content="Being quite a places where your words have no effect or attention towards you....",
+            author_id=current_user.id
+        )
+        db.add_all([Post1,Post2])
+        return {
+            "Message":"Successfully posts saved"
+        }
+    

@@ -41,4 +41,11 @@ def get_db():
     finally:
         db.close()
 
+def get_auth_db():
+    db=Sessionlocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 Base.metadata.create_all(bind=engine)
