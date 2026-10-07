@@ -51,11 +51,13 @@ def get_posts(
 def get_a_post(db:Session,post_id:int):
     return db.query(Post).filter(Post.id==post_id).first()
 
+
 #get admin by current user
 def get_current_user_admin(current_user=Depends(get_current_user)):
      if not current_user.is_admin:
           raise HTTPException(status_code=403,detail="Admin access required")
      return current_user
+
 
 @router.get("/admin")
 def get_admin(current_user=Depends(get_current_user_admin)):
@@ -65,86 +67,8 @@ def get_admin(current_user=Depends(get_current_user_admin)):
      }
 
 
-#router for user Registration
-@router.post("/register",response_model=UserResponse,status_code=201)
-def reg(user_data:UserCreate,db:Session=Depends(get_db)):
-     new_user=User(
-          username=user_data.username,
-          email=user_data.email,
-          password=hash_password(user_data.password)
-     )
-     db.add(new_user)
-     db.commit()
-     db.refresh(new_user)
-
-     return new_user
-
-#router to get a refersh token
-@router.post("/refresh")
-def refresh_token(data:RefreshToken,db:Session=Depends(get_db)):
-     try:
-          playload= jwt.decode(data.refresh_token,SECRET_KEY,algorithms=[ALGORITHM])
-          if playload.get("type") != "refresh":
-               raise HTTPException(status_code=401,detail="Invalid refresh token")
-          jti=playload.get("jti")
-          revoked=db.query(RevokedToken).filter(RevokedToken.jti==jti).first()
-          if revoked is not None:
-               raise HTTPException(status_code=401, detail="Refresh token has been revoked")
-          user_id = playload.get('user_id')
-          if user_id is None:
-               raise HTTPException(status_code=401,detail="Invalid refresh_token")
-          new_access_token=create_access_token({"user_id":user_id,"type":"access"})
-          return {
-               "access_token":new_access_token,
-               "token_type":"bearer"
-          }
-     except JWTError:
-          raise HTTPException(status_code=401,detail="Invalid token or token expired")
-
-@router.post("/logout")
-def logout(data:RefreshToken,db:Session=Depends(get_db)):
-     try:
-          playload=jwt.decode(data.refresh_token,SECRET_KEY,algorithms=ALGORITHM)
-          if playload.get("type") != "refresh":
-               raise HTTPException(status_code=401,detail="Invalid refresh token")
-          jti=playload.get('jti')
-          if jti is None:
-               raise HTTPException(status_code=401,detail="Invalid refresh token")
-          revoked = db.query(RevokedToken).filter(RevokedToken.jti== jti).first()
-          if revoked is None:
-            db.add(RevokedToken(jti=jti))
-            db.commit()
-
-          return {"message": "Logout successful"}
-     except JWTError:
-          raise HTTPException(status_code=401,detail="Invalid or expired token")
-
-     
-#router for login
-@router.post("/login")
-def login(user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
-     print("USERNAME:", user_detail.username)
-     print("PASSWORD RECEIVED:", bool(user_detail.password))
-     user=db.query(User).filter(User.username == user_detail.username).first()
-
-     print("USER FOUND:", user is not None)
-
-     if user is not None:
-          if verify_hash(user_detail.password,user.password):
-               access_token = create_access_token({"user_id": user.id,"type": "access"})
-               refresh_token = create_refresh_token({"user_id": user.id,"type": "refresh"})
-               return {
-                    "Message":"Login Successfull",
-                    "access_token":access_token,
-                    "refresh_token":refresh_token,
-                    "Token_type":"bearer"
-               }
-          raise HTTPException(status_code=401,detail="Invalid email or password")
-     raise HTTPException(status_code=401,detail="Invalid email or password")
-
-
 @router.get("/posts",response_model=PostsResponse)
-def home(current_user=Depends(get_current_user),posts=Depends(get_posts),notify:bool=False):
+def home(posts=Depends(get_posts),notify:bool=False):
     return{
         'Message':'Here are all the posts',
         'notify':notify,
