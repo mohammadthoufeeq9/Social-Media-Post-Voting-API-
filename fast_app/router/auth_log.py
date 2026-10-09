@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from fast_app.database.database import get_db
-from fast_app.models.post import Post,User,RevokedToken
+from fast_app.models.post import Post,User,RevokedToken,RevokedTokenFamily
 
 from fast_app.schemas.post import(
      create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse,UserLogin,RefreshToken
@@ -49,12 +49,23 @@ def refresh_token(data:RefreshToken,db:Session=Depends(get_db)):
           if user_id is None:
                raise HTTPException(status_code=401,detail="Invalid refresh_token")
           new_access_token=create_access_token({"user_id":user_id,"type":"access"})
-          return {
-               "access_token":new_access_token,
-               "token_type":"bearer"
-          }
+          
      except JWTError:
           raise HTTPException(status_code=401,detail="Invalid token or token expired")
+     db.add(RevokedToken(jti=jti))
+     db.commit()
+
+     new_access_token = create_access_token({
+             "user_id": user_id,"type": "access"
+         })
+     
+     new_refresh_token = create_refresh_token({"user_id": user_id})
+     return {
+             "access_token": new_access_token,
+             "refresh_token": new_refresh_token,
+             "token_type": "bearer"
+         }
+
 
 @router.post("/logout")
 def logout(data:RefreshToken,db:Session=Depends(get_db)):
