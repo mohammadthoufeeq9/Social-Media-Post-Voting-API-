@@ -1,5 +1,5 @@
 from sqlalchemy import or_,and_
-from fastapi import HTTPException,Header,Cookie,Form,File,UploadFile,Depends
+from fastapi import HTTPException,Header,Cookie,Form,File,UploadFile,Depends,status
 from fastapi import APIRouter
 
 from sqlalchemy.orm import Session
@@ -25,7 +25,7 @@ def get_posts(
     title: str | None = None,
     search:str|None=None,
     published:bool|None=None,
-    page:int=0,
+    page:int=1,
     db: Session = Depends(get_db)
 ):
     query = db.query(Post)
@@ -44,6 +44,8 @@ def get_posts(
           query=query.order_by(Post.created_at.desc())
 
     offset=(page -1)*limit
+    if page < 1:
+         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="No negative pages and zero pages")
 
     return query.offset(offset).limit(limit).all()
 
@@ -59,7 +61,7 @@ def get_current_user_admin(current_user=Depends(get_current_user)):
      return current_user
 
 
-@router.get("/admin")
+@router.get("/admin",status_code=status.HTTP_200_OK)
 def get_admin(current_user=Depends(get_current_user_admin)):
      return {
           "Message":"Welcome admin",
@@ -95,7 +97,7 @@ def get_post_by_id(post_id:int,db:Session=Depends(get_db),detail:bool=False):
             return post
 
 
-@router.post("/post",response_model=PostResponse,status_code=201)
+@router.post("/post",response_model=PostResponse,status_code=status.HTTP_201_CREATED)
 def createPost(post_cre:create_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
      
      new_post=Post(title=post_cre.title,content=post_cre.content,author_id=current_user.id)

@@ -30,3 +30,8 @@ class RevokedToken(Base):
 
     jti: Mapped[str] = mapped_column(String(255), primary_key=True)
     revoked_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+class Vote(Base):
+    __tablename__="votes"
+    post_id:Mapped[int]=mapped_column(Integer,ForeignKey("posts.id",ondelete='CASCADE'),primary_key=True)
+    user_id:Mapped[int]=mapped_column(Integer,ForeignKey('Users.id',ondelete='CASCADE'),primary_key=True)

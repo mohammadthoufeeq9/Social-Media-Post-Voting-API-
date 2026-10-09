@@ -1,5 +1,6 @@
 from pydantic import BaseModel,ConfigDict,EmailStr,Field
 from datetime import datetime
+from typing import Literal
 
 
 class update_post(BaseModel):#patch needs to omite few things so we create another schema with a none
@@ -33,7 +34,7 @@ class UserResponse(BaseModel):
     id:int
     username:str
     email:str
-    Bio:str
+    Bio:str|None=None
 
 class UserLogin(BaseModel):
     email:EmailStr
@@ -53,3 +54,8 @@ class UserNotFoundException(Exception):
 
 class RefreshToken(BaseModel):
     refresh_token:str
+
+
+class Vote_schema(BaseModel):
+    post_id:int
+    dir:Literal[0,1]

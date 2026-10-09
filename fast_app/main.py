@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fast_app.router import posts,profile,noconcern,auth_log
+from fast_app.router import posts,profile,noconcern,auth_log,vote
 from fast_app.utils.auth import get_current_user
 import time
 from fastapi import Request
@@ -12,6 +12,7 @@ app.include_router(posts.router,tags=['Posts'])
 app.include_router(profile.router,tags=['Profile'])
 app.include_router(noconcern.router,tags=['Expermental_route'])
 app.include_router(auth_log.router,tags=['Auth'])
+app.include_router(vote.router)
 # app.dependency_overrides[get_current_user]=test_user
 
 
@@ -55,44 +56,4 @@ async def user_not_found_handler(
             "message": "User not found"
         }
     )
-# class create_post(BaseModel):
-#     title:str
-#     content:str
 
-
-# @app.get("/user_name")
-# def get_user():
-#     return 'Thoufeeq'
-
-# @app.get("/dep-test")
-# def get_dep(user=Depends(get_user)):
-#     return {
-#         'user': user
-#     }
-
-
-# @app.get("/header-test")
-# def header_test(api_key: str | None = Header(default=None)):
-#     return {
-#         "api_key": api_key
-#     }
-
-# @app.get("/cook")
-# def cook_test(session_id:str|None = Cookie(default=None)):
-#     return{
-#         "sessionid":session_id
-#     }
-
-# @app.post("/form")
-# def form(user_name:str=Form(),password:str=Form()):
-#     return{
-#         "username":user_name,
-#         "password":password
-#     }
-
-# @app.post("/upload")
-# def upload(file_up:UploadFile=File()):
-#     return{
-#         "filename":file_up.filename,
-#         "content_type":file_up.content_type
-#     }
