@@ -3,17 +3,19 @@ from fastapi import APIRouter
 
 from sqlalchemy.orm import Session
 from fastapi import Depends
+from fastapi import status
 
 from fast_app.database.database import get_db
-from fast_app.models.post import Post,User,RevokedToken,RevokedTokenFamily
+from fast_app.models.post import User,RevokedToken,RevokedTokenFamily,RevokedToken
 
 from fast_app.schemas.post import(
      UserCreate,UserResponse,RefreshToken
 )
 from fast_app.utils.password import verify_hash,hash_password
-from fast_app.utils.auth import create_access_token,get_current_user,create_refresh_token,SECRET_KEY,ALGORITHM
+from fast_app.utils.auth import create_access_token,create_refresh_token,SECRET_KEY,ALGORITHM
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt,JWTError
+from uuid import uuid4
 
 router = APIRouter()
 
@@ -34,32 +36,48 @@ def reg(user_data:UserCreate,db:Session=Depends(get_db)):
 def refresh_token(data:RefreshToken,db:Session=Depends(get_db)):
      try:
           playload= jwt.decode(data.refresh_token,SECRET_KEY,algorithms=[ALGORITHM])
-          if playload.get("type") != "refresh":
-               raise HTTPException(status_code=401,detail="Invalid refresh token")
-          jti=playload.get("jti")
-          revoked=db.query(RevokedToken).filter(RevokedToken.jti==jti).first()
-          if revoked is not None:
-               raise HTTPException(status_code=401, detail="Refresh token has been revoked")
-          user_id = playload.get('user_id')
-          if user_id is None:
-               raise HTTPException(status_code=401,detail="Invalid refresh_token")
-          new_access_token=create_access_token({"user_id":user_id,"type":"access"})
-          
+
      except JWTError:
-          raise HTTPException(status_code=401,detail="Invalid token or token expired")
+          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid token or token expired")
+     
+     #checktoken type
+     if playload.get('type')!='refresh':
+          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail='Invalid refresh token')
+     
+     #token detail
+
+     jti=playload.get('jti')
+     family_id=playload.get('family_id')
+     user_id=playload.get('user_id')
+     if not jti or not family_id or not user_id:
+          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid refresh token")
+     
+     #Check whether the family is revoked
+     revoked_family=db.query(RevokedTokenFamily).filter(RevokedTokenFamily.family_id == family_id).first()
+     if revoked_family is not None:
+          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid refresh token")
+
+     #check is this token is already used
+     revoked=db.query(RevokedToken).filter( RevokedToken.jti == jti).first()
+     if revoked is not None:
+          # Reuse detected:- revoke this login session
+          db.add(RevokedTokenFamily(family_id=family_id))
+          db.commit()
+          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail='Refresh token reuse detected; session revoked')
+     
+     # Create replacement tokens with the same family ID
+     new_access_token=create_access_token({'user_id':user_id,'type':"access"})
+     new_refresh_token=create_refresh_token({'user_id':user_id,'family_id':family_id})
+
+     # Revoke the old refresh token
      db.add(RevokedToken(jti=jti))
      db.commit()
 
-     new_access_token = create_access_token({
-             "user_id": user_id,"type": "access"
-         })
-     
-     new_refresh_token = create_refresh_token({"user_id": user_id})
-     return {
-             "access_token": new_access_token,
-             "refresh_token": new_refresh_token,
-             "token_type": "bearer"
-         }
+     return{
+          'access_token':new_access_token,
+          'refresh_token':new_refresh_token,
+          'type':"bearer"
+     }
 
 
 @router.post("/logout")
@@ -91,8 +109,9 @@ def login(user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get
 
      if user is not None:
           if verify_hash(user_detail.password,user.password):
+               family_id=str(uuid4())
                access_token = create_access_token({"user_id": user.id,"type": "access"})
-               refresh_token = create_refresh_token({"user_id": user.id,"type": "refresh"})
+               refresh_token = create_refresh_token({"user_id": user.id,"family_id":family_id})
                return {
                     "Message":"Login Successfull",
                     "access_token":access_token,
