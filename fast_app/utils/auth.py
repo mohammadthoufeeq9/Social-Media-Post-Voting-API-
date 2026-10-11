@@ -32,7 +32,8 @@ def get_current_user(token:str=Depends(oauth_scheme),db=Depends(get_auth_db)):
     try:
         play_load=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
         user_id=play_load.get("user_id")
-        
+        if play_load.get('type') != 'acccess':
+            raise HTTPException(status_code=401, detail='Invalid access token')
         if user_id is None:
             raise HTTPException(status_code=401 ,detail="User not found")
     except JWTError:

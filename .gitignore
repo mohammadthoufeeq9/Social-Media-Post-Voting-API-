@@ -2,4 +2,5 @@ venv/
 .env
 __pycache__/
 *.pyc
+.pytest_cache
 D:\FASTAPI\api_app\fast_app\router\practice.py

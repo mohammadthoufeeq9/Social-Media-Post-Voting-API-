@@ -111,11 +111,8 @@ def logout(request:Request,data:RefreshToken,db:Session=Depends(get_db)):
 @router.post("/login")
 @limiter.limit('5/minute')
 def login(request:Request,user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
-     print("USERNAME:", user_detail.username)
-     print("PASSWORD RECEIVED:", bool(user_detail.password))
-     user=db.query(User).filter(User.username == user_detail.username).first()
 
-     print("USER FOUND:", user is not None)
+     user=db.query(User).filter(User.username == user_detail.username).first()
 
      if user is not None:
           if verify_hash(user_detail.password,user.password):
