@@ -6,16 +6,14 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from fast_app.database.database import get_db
-from fast_app.models.post import Post,User,RevokedToken
+from fast_app.models.post import Post
 
 from fast_app.schemas.post import(
-     create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse,UserLogin,RefreshToken
+     create_post,update_post,PostResponse,PostsResponse
 )
-from fast_app.utils.password import verify_hash,hash_password
-from fast_app.utils.auth import create_access_token,get_current_user,create_refresh_token,SECRET_KEY,ALGORITHM
-from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import BackgroundTasks
-from jose import jwt,JWTError
+from fast_app.utils.auth import get_current_user
+from fastapi import Request
+from fast_app.utils.rate_limit import limiter
 
 router = APIRouter()
 
@@ -98,7 +96,8 @@ def get_post_by_id(post_id:int,db:Session=Depends(get_db),detail:bool=False):
 
 
 @router.post("/post",response_model=PostResponse,status_code=status.HTTP_201_CREATED)
-def createPost(post_cre:create_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+@limiter.limit('30/minute')
+def createPost(request:Request,post_cre:create_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
      
      new_post=Post(title=post_cre.title,content=post_cre.content,author_id=current_user.id)
         
@@ -111,7 +110,8 @@ def createPost(post_cre:create_post,db:Session=Depends(get_db),current_user=Depe
 
 
 @router.put("/post/{post_id}",response_model=PostResponse,status_code=200)
-def post_put(post_id:int,post_put:create_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+@limiter.limit('20/minute')
+def post_put(request:Request,post_id:int,post_put:create_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     post=get_a_post(db,post_id)
     if post is None:
         raise HTTPException(status_code=404,detail="Post not found-have a break")
@@ -129,7 +129,8 @@ def post_put(post_id:int,post_put:create_post,db:Session=Depends(get_db),current
 
 
 @router.patch("/post/{post_id}",response_model=PostResponse,status_code=200)
-def patch_update(post_id:int,post_data:update_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+@limiter.limit('20/minute')
+def patch_update(request:Request,post_id:int,post_data:update_post,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     post=get_a_post(db,post_id)
     if Post.author_id != current_user:
          raise HTTPException(status_code=403,detail="You are not allowed to update this post")
@@ -145,12 +146,14 @@ def patch_update(post_id:int,post_data:update_post,db:Session=Depends(get_db),cu
     return post
 
 @router.delete("/post/{post_id}",status_code=204)
-def post_delete(post_id:int,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
+@limiter.limit("5/minute")
+def post_delete(request:Request,post_id:int,db:Session=Depends(get_db),current_user=Depends(get_current_user)):
     post=get_a_post(db,post_id)
+    if post is None:
+             raise HTTPException(status_code=404,detail="Oh shit!!! Try providing a valid post_id....")
     if Post.author_id != current_user:
          raise HTTPException(status_code=403,detail="You are not allowed to delete this post")
-    if post is None:
-         raise HTTPException(status_code=404,detail="Oh shit!!! Try providing a valid post_id....")
+
     if post is not None:
         db.delete(post)
         db.commit()

@@ -17,10 +17,17 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt,JWTError
 from uuid import uuid4
 
+from fast_app.utils.rate_limit import limiter
+from fastapi import Request
+
 router = APIRouter()
 
 @router.post("/register",response_model=UserResponse,status_code=201)
-def reg(user_data:UserCreate,db:Session=Depends(get_db)):
+@limiter.limit('1/minute')
+def reg(request:Request,user_data:UserCreate,db:Session=Depends(get_db)):
+     existing_user=db.query(User).filter(User.email == user_data.email).first()
+     if existing_user is not None:
+          raise HTTPException(status_code=status.HTTP_409_CONFLICT,detail='A user with this email already exists')
      new_user=User(
           username=user_data.username,
           email=user_data.email,
@@ -33,7 +40,8 @@ def reg(user_data:UserCreate,db:Session=Depends(get_db)):
      return new_user
 
 @router.post("/refresh")
-def refresh_token(data:RefreshToken,db:Session=Depends(get_db)):
+@limiter.limit('10/minute')
+def refresh_token(request:Request,data:RefreshToken,db:Session=Depends(get_db)):
      try:
           playload= jwt.decode(data.refresh_token,SECRET_KEY,algorithms=[ALGORITHM])
 
@@ -81,7 +89,8 @@ def refresh_token(data:RefreshToken,db:Session=Depends(get_db)):
 
 
 @router.post("/logout")
-def logout(data:RefreshToken,db:Session=Depends(get_db)):
+@limiter.limit('10/minute')
+def logout(request:Request,data:RefreshToken,db:Session=Depends(get_db)):
      try:
           playload=jwt.decode(data.refresh_token,SECRET_KEY,algorithms=ALGORITHM)
           if playload.get("type") != "refresh":
@@ -100,7 +109,8 @@ def logout(data:RefreshToken,db:Session=Depends(get_db)):
 
      
 @router.post("/login")
-def login(user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
+@limiter.limit('5/minute')
+def login(request:Request,user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
      print("USERNAME:", user_detail.username)
      print("PASSWORD RECEIVED:", bool(user_detail.password))
      user=db.query(User).filter(User.username == user_detail.username).first()
