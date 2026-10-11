@@ -1,5 +1,4 @@
-from sqlalchemy import or_,and_
-from fastapi import HTTPException,Header,Cookie,Form,File,UploadFile,Depends
+from fastapi import HTTPException,Depends
 from fastapi import APIRouter
 
 from sqlalchemy.orm import Session
@@ -9,18 +8,15 @@ from fast_app.database.database import get_db
 from fast_app.models.post import Post,User,RevokedToken,RevokedTokenFamily
 
 from fast_app.schemas.post import(
-     create_post,update_post,PostResponse,PostsResponse,UserCreate,UserResponse,UserLogin,RefreshToken
+     UserCreate,UserResponse,RefreshToken
 )
 from fast_app.utils.password import verify_hash,hash_password
 from fast_app.utils.auth import create_access_token,get_current_user,create_refresh_token,SECRET_KEY,ALGORITHM
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import BackgroundTasks
 from jose import jwt,JWTError
 
 router = APIRouter()
 
-
-#router for user Registration
 @router.post("/register",response_model=UserResponse,status_code=201)
 def reg(user_data:UserCreate,db:Session=Depends(get_db)):
      new_user=User(
@@ -34,7 +30,6 @@ def reg(user_data:UserCreate,db:Session=Depends(get_db)):
 
      return new_user
 
-#router to get a refersh token
 @router.post("/refresh")
 def refresh_token(data:RefreshToken,db:Session=Depends(get_db)):
      try:
@@ -86,7 +81,6 @@ def logout(data:RefreshToken,db:Session=Depends(get_db)):
           raise HTTPException(status_code=401,detail="Invalid or expired token")
 
      
-#router for login
 @router.post("/login")
 def login(user_detail:OAuth2PasswordRequestForm=Depends(),db:Session=Depends(get_db)):
      print("USERNAME:", user_detail.username)

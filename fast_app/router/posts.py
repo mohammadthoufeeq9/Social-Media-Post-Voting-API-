@@ -1,5 +1,5 @@
-from sqlalchemy import or_,and_
-from fastapi import HTTPException,Header,Cookie,Form,File,UploadFile,Depends,status
+from sqlalchemy import or_
+from fastapi import HTTPException,Depends,status
 from fastapi import APIRouter
 
 from sqlalchemy.orm import Session
@@ -19,7 +19,7 @@ from jose import jwt,JWTError
 
 router = APIRouter()
 
-#function to get all posts with a limit, title filter,search,pagination,or_,and_,des-aes,
+
 def get_posts(
     limit: int = 5,
     title: str | None = None,
@@ -49,12 +49,12 @@ def get_posts(
 
     return query.offset(offset).limit(limit).all()
 
-#fun to get one post
+
 def get_a_post(db:Session,post_id:int):
     return db.query(Post).filter(Post.id==post_id).first()
 
 
-#get admin by current user
+
 def get_current_user_admin(current_user=Depends(get_current_user)):
      if not current_user.is_admin:
           raise HTTPException(status_code=403,detail="Admin access required")
@@ -103,8 +103,8 @@ def createPost(post_cre:create_post,db:Session=Depends(get_db),current_user=Depe
      new_post=Post(title=post_cre.title,content=post_cre.content,author_id=current_user.id)
         
      db.add(new_post)
-     db.commit()#save it
-     db.refresh(new_post) # retrieve generated values--this will refrest to create default values if not present it will give only title and content
+     db.commit()
+     db.refresh(new_post) 
 
      return new_post
 

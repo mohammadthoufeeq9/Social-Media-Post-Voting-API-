@@ -2,4 +2,4 @@ venv/
 .env
 __pycache__/
 *.pyc
-fast_app/router/nonconcern.py
+fast_app/router/pratice.py
